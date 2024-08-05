@@ -1,6 +1,7 @@
 import numpy as np
 
 
+# Read the point clouds from the sensors csv files, considering only the x, y, z columns.
 def load_point_clouds(file_paths):
     point_clouds = []
     for file_path in file_paths:
@@ -9,5 +10,6 @@ def load_point_clouds(file_paths):
     return point_clouds
 
 
+# Read the trajectories from the pitt_trajectories.csv file.
 def load_trajectories(file_path):
     return np.loadtxt(file_path, delimiter=',', skiprows=1)
