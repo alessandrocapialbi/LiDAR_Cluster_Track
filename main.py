@@ -24,6 +24,8 @@ def main():
 
     o3d_point_clouds = [o3d.geometry.PointCloud(o3d.utility.Vector3dVector(pcd)) for pcd in filtered_point_clouds]
 
+    # CONVERSION FROM SENSOR TO WORLD COORDINATES
+
     merged_pcd = merge_point_clouds(o3d_point_clouds)
 
     clusters, bounding_boxes = clustering_and_bounding_boxes(merged_pcd)
