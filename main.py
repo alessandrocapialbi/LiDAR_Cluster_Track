@@ -1,21 +1,42 @@
-import numpy as np
+import os
 import open3d as o3d
+from data_loader import load_point_clouds_from_sensors, load_trajectories
+from ground_filter import filter_ground
+from sensor_selection import select_sensors
+from point_cloud_merger import merge_point_clouds
+from clustering import clustering_and_bounding_boxes
 
-filename = r"C:\\Users\\aless\\Desktop\\LiDARClusterTrack\\sensors\sensor_4_27.csv"
 
-data = np.genfromtxt(filename, delimiter=',', skip_header=1, usecols=[5, 6, 7])
+def main():
 
-z_threshold = -1.5
+    point_cloud_directory = "..\\..\\sensors\\"
 
-z_column_index = 2
+    # Sensor to use
+    selected_indices = select_sensors(5)
 
-car_data = data[data[:, z_column_index] > z_threshold]
+    # Load the point clouds from the selected sensors
+    point_clouds = []
+    for i in selected_indices:
+        filenames = load_point_clouds_from_sensors(point_cloud_directory, selected_indices[i], range(20, 31))
+        point_clouds.extend([o3d.io.read_point_cloud(filename) for filename in filenames])
 
-# Crea un oggetto PointCloud
-pcd = o3d.geometry.PointCloud()
-print("Numero di punti: ", len(car_data))
-pcd.points = o3d.utility.Vector3dVector(car_data)
-num_points_before = len(pcd.points)
 
-# Visualizza la nuvola di punti
-o3d.visualization.draw_geometries([pcd])
+    # Filtra il terreno dalle nuvole di punti
+    z_threshold = -1.5
+    filtered_point_clouds = [filter_ground(pcd, z_threshold) for pcd in point_clouds]
+
+    # Converte le nuvole di punti filtrate in Open3D PointCloud objects
+    o3d_point_clouds = [o3d.geometry.PointCloud(o3d.utility.Vector3dVector(pcd)) for pcd in filtered_point_clouds]
+
+    # Unisci le nuvole di punti filtrate
+    merged_pcd = merge_point_clouds(o3d_point_clouds)
+
+    # Esegui il clustering e crea bounding box
+    clusters, bounding_boxes = clustering_and_bounding_boxes(merged_pcd)
+
+    # Visualizza i risultati
+    o3d.visualization.draw_geometries([merged_pcd] + bounding_boxes)
+
+
+if __name__ == "__main__":
+    main()
