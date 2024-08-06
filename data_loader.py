@@ -1,11 +1,6 @@
 import os
 import numpy as np
-import open3d as o3d
-
-
-def load_point_cloud_from_csv(filename):
-    data = np.loadtxt(filename, delimiter=',')
-    return o3d.geometry.PointCloud(o3d.utility.Vector3dVector(data))
+import pandas as pd
 
 
 # Load the point clouds from the sensors one by one.
@@ -17,6 +12,11 @@ def load_point_clouds_from_sensors(directory, sensor_ids, scan_number):
         if os.path.exists(file_path):
             filenames.append(file_path)
     return filenames
+
+
+def load_sensor_positions(sensor_positions_csv):
+    df = pd.read_csv(sensor_positions_csv)
+    return df
 
 
 # Read the trajectories from the pitt_trajectories.csv file.
