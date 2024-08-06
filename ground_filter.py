@@ -1,13 +1,14 @@
 import os
 import pandas as pd
 
-point_cloud_directory = "\\sensors\\"
 
-output_directory = "\\filtered_data_sensors\\"
+current_directory = os.path.dirname(os.path.abspath(__file__))
+point_cloud_directory = os.path.join(current_directory, 'sensors_data')
+output_directory = os.path.join(current_directory, 'filtered_sensors_data')
 
 
 # All the z points below the threshold are considered as ground points.
-def filter_ground(z_threshold):
+def ground_filter(z_threshold):
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
 

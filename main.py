@@ -1,29 +1,20 @@
 import os
+import numpy as np
 import open3d as o3d
-from data_loader import load_point_clouds_from_sensors, load_trajectories
-from ground_filter import filter_ground
-from sensor_selection import select_sensors
-from point_cloud_merger import merge_point_clouds
-from clustering import clustering_and_bounding_boxes
+
+filename = "C:\\Users\\aless\\Desktop\\LiDARClusterTrack\\alessandrocapialbi\\LiDAR_Cluster_Track\\filtered_sensors_data\\sensor_3_22.csv"
+
+data = np.genfromtxt(filename, delimiter=',', skip_header=1, usecols=[5, 6, 7])
+
+# Crea un oggetto PointCloud
+pcd = o3d.geometry.PointCloud()
+print("Numero di punti: ", len(data))
+pcd.points = o3d.utility.Vector3dVector(data)
+num_points_before = len(pcd.points)
 
 
-def main():
-    # Sensor to use
-    selected_indices = select_sensors(5)
-
-    z_threshold = -1.5
-    filtered_point_clouds = filter_ground(z_threshold)
-
-    o3d_point_clouds = [o3d.geometry.PointCloud(o3d.utility.Vector3dVector(pcd)) for pcd in filtered_point_clouds]
-
-    # CONVERSION FROM SENSOR TO WORLD COORDINATES
-
-    merged_pcd = merge_point_clouds(o3d_point_clouds)
-
-    clusters, bounding_boxes = clustering_and_bounding_boxes(merged_pcd)
-
-    o3d.visualization.draw_geometries([merged_pcd] + bounding_boxes)
+# Visualizza la nuvola di punti
+o3d.visualization.draw_geometries([pcd])
 
 
-if __name__ == "__main__":
-    main()
+
