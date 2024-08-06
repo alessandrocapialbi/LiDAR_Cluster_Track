@@ -8,17 +8,14 @@ def load_point_cloud_from_csv(filename):
     return o3d.geometry.PointCloud(o3d.utility.Vector3dVector(data))
 
 
-def load_point_clouds_from_sensors(directory, sensor_ids, scan_numbers):
-    all_files = [f for f in os.listdir(directory) if f.endswith('.csv')]
+# Load the point clouds from the sensors one by one.
+def load_point_clouds_from_sensors(directory, sensor_ids, scan_number):
     filenames = []
-    for filename in all_files:
-        for sensor_id in sensor_ids:
-            if f'sensor_{sensor_id}_' in filename:
-                for scan_number in scan_numbers:
-                    if f'_{scan_number:02d}.csv' in filename:
-                        filenames.append(os.path.join(directory, filename))
-                        break
-                break
+    for sensor_id in sensor_ids:
+        filename = f'sensor_{sensor_id}_{scan_number:02d}.csv'
+        file_path = os.path.join(directory, filename)
+        if os.path.exists(file_path):
+            filenames.append(file_path)
     return filenames
 
 
