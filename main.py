@@ -2,6 +2,7 @@ from sensor_selection import select_sensors
 from data_loader import *
 from transform_coordinates import *
 import open3d as o3d
+from point_cloud_merger import merge_point_clouds
 
 current_directory = os.path.dirname(os.path.abspath(__file__))
 point_cloud_directory = os.path.join(current_directory, 'filtered_sensors_data')
@@ -30,6 +31,10 @@ print(center_sensors)
 
 point_clouds = []
 pcd_combined = o3d.geometry.PointCloud()
+'''''''''
+For every imported scan of the selected sensors transform the coordinates and create the new point cloud 
+with global coordinates 
+'''''''''
 for sensor_id, file_path in zip(selected_sensors, sensors_scans):
     transformed_data = load_and_transform_scan(file_path, sensors_positions_df, center_sensors, sensor_id)
     print(file_path)
@@ -43,8 +48,12 @@ for sensor_id, file_path in zip(selected_sensors, sensors_scans):
         pcd.points = o3d.utility.Vector3dVector(transformed_data)
         point_clouds.append(pcd)
 
-combined_points = np.vstack([np.asarray(pcd.points) for pcd in point_clouds])
-pcd_combined.points = o3d.utility.Vector3dVector(combined_points)
+# Merge the point clouds
+pcd_combined = merge_point_clouds(point_clouds)
+print("Number of points: ", len(pcd_combined.points))
+
+pcd_combined = pcd_combined.voxel_down_sample(voxel_size=0.3)
+print("Number of points after the downsampling", len(pcd_combined.points))
 
 # View the combined point cloud
 o3d.visualization.draw_geometries([pcd_combined])
