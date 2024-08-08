@@ -14,8 +14,9 @@ def load_point_clouds_from_sensors(directory, sensor_ids, scan_number):
     return filenames
 
 
-def load_sensor_positions(sensor_positions_csv):
-    df = pd.read_csv(sensor_positions_csv)
+def load_sensor_positions(sensor_positions):
+    # Load the sensor positions from the CSV file.
+    df = pd.read_csv(sensor_positions)
     return df
 
 
