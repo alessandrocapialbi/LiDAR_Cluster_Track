@@ -17,10 +17,6 @@ def calculate_sensors_centroid(sensor_positions_df):
 
 def load_and_transform_scan(file_path, sensor_positions_df, center_sensors, sensor_id):
     # Load a scan, transform its coordinates into the global system, and return the transformed data.
-    """''''''
-    print(sensor_id)
-    print("\n")
-    ''''''"""
     if os.path.exists(file_path):
         # Transform the CSV in a NumPy array
         xyz = np.genfromtxt(file_path, delimiter=',', skip_header=1, usecols=[5, 6, 7])  # x, y, z are in cols 6, 7, 8
