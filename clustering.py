@@ -20,6 +20,7 @@ def dbscan_clustering(pcd, eps=None, min_points=6, plot_k_distance=False):
         distances, _ = neighbors.kneighbors(points)
         k_distances_sorted = np.sort(distances, axis=0)[:, -1]
 
+        """""""""
         if plot_k_distance:
             # Plot the K-distance graph
             plt.figure(figsize=(10, 6))
@@ -29,7 +30,7 @@ def dbscan_clustering(pcd, eps=None, min_points=6, plot_k_distance=False):
             plt.title(f'K-distance Graph (min_samples = {min_points})')
             plt.grid(True)
             plt.show()
-        print(np.argmax(np.diff(k_distances_sorted)))
+        """""""""
         # Suggest an eps based on the point of maximum slope
         eps = k_distances_sorted[np.argmax(np.diff(k_distances_sorted))]
         print(f"Suggested eps: {eps}")
