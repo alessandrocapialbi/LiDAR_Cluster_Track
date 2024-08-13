@@ -2,6 +2,9 @@ import numpy as np
 import open3d as o3d
 from sklearn.cluster import DBSCAN
 from sklearn.neighbors import NearestNeighbors
+from sklearn.metrics import silhouette_score
+from sklearn.metrics import davies_bouldin_score
+from sklearn.metrics import calinski_harabasz_score
 import matplotlib.pyplot as plt
 import os
 
@@ -39,6 +42,13 @@ def dbscan_clustering(pcd, eps=None, min_points=6, plot_k_distance=False):
     # Create clusters
     unique_labels = set(labels)
     clusters = [points[labels == label] for label in unique_labels if label != -1]
+
+    silhouette_avg = silhouette_score(points, labels)
+    db_index = davies_bouldin_score(points, labels)
+    ch_index = calinski_harabasz_score(points, labels)
+    print(f"Silhouette Score: {silhouette_avg}\n")
+    print(f"Davies-Bouldin Index: {db_index}")
+    print(f"Calinski-Harabasz Index: {ch_index}")
 
     return clusters, labels
 
