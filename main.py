@@ -8,7 +8,7 @@ from clustering import dbscan_clustering, create_bounding_boxes
 
 current_directory = os.path.dirname(os.path.abspath(__file__))
 point_cloud_directory = os.path.join(current_directory, 'filtered_sensors_data')
-sensors_positions_path = os.path.join(current_directory, 'sensors_positions\\pitt_sensor_positions.csv')
+sensors_positions_path = os.path.join(current_directory, 'sensors_positions/pitt_sensor_positions.csv')
 
 # Choose the total number of sensors available
 print("Enter the total number of sensors available: ")
@@ -57,9 +57,8 @@ print("Number of points: ", len(pcd_combined.points))
 pcd_combined = downsample_pcd(pcd_combined, voxel_size=0.3)
 print("Number of points after the downsampling", len(pcd_combined.points))
 
-clusters = dbscan_clustering(pcd_combined, eps=0.5, min_points=10)
-color = [1, 0, 0]
-bounding_boxes = create_bounding_boxes(clusters, color)
+clusters, labels = dbscan_clustering(pcd_combined, plot_k_distance= True )
+bounding_boxes = create_bounding_boxes(clusters)
 
 # Visualize the point cloud and the bounding boxes
 geometries = [pcd_combined] + bounding_boxes
