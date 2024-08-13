@@ -1,55 +1,51 @@
-
-
-
-
-
 import numpy as np
 import open3d as o3d
 from sklearn.cluster import DBSCAN
+from sklearn.neighbors import NearestNeighbors
+import matplotlib.pyplot as plt
 import os
 
 path = os.path.dirname(os.path.abspath(__file__))
 output_file_path = os.path.join(path, 'transformed/color.csv')
 
 
-def dbscan_clustering(pcd, eps=0.5, min_points=10):
+def dbscan_clustering(pcd, eps=None, min_points=6, plot_k_distance=False):
     points = np.asarray(pcd.points)
+    if eps is None:
+        # Calculate the K-distance graph to determine eps
+        neighbors = NearestNeighbors(n_neighbors=min_points).fit(points)
+        distances, _ = neighbors.kneighbors(points)
+        k_distances_sorted = np.sort(distances, axis=0)[:, -1]
 
+        if plot_k_distance:
+            # Plot the K-distance graph
+            plt.figure(figsize=(10, 6))
+            plt.plot(k_distances_sorted)
+            plt.xlabel('Points sorted (in ascending order)')
+            plt.ylabel(f'Distance to the {min_points}-th nearest neighbor')
+            plt.title(f'K-distance Graph (min_samples = {min_points})')
+            plt.grid(True)
+            plt.show()
+        print(np.argmax(np.diff(k_distances_sorted)))
+        # Suggest an eps based on the point of maximum slope
+        eps = k_distances_sorted[np.argmax(np.diff(k_distances_sorted))]
+        print(f"Suggested eps: {eps}")
+
+    # Run DBSCAN with the determined eps value
     clustering = DBSCAN(eps=eps, min_samples=min_points).fit(points)
 
     labels = clustering.labels_
 
-    # Set the labels
+    # Create clusters
     unique_labels = set(labels)
-
-    # Create the clusters
     clusters = [points[labels == label] for label in unique_labels if label != -1]
 
-    return clusters
+    return clusters, labels
 
 
-def create_bounding_boxes(clusters, color, line_width=0.02):
+def create_bounding_boxes(clusters):
     bounding_boxes = []
     for cluster in clusters:
-        bbox = o3d.geometry.AxisAlignedBoundingBox.create_from_points(o3d.utility.Vector3dVector(cluster))
-
-        # Set the color of the bounding box
-        bbox.color = color
-
-        # Create the lines of the bounding box
-        line_set = o3d.geometry.LineSet.create_from_axis_aligned_bounding_box(bbox)
-        line_set.paint_uniform_color(color)
-
-        # Create the coordinate frame to thickness the lines
-        mesh_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=line_width, origin=[0, 0, 0])
-        lines = []
-        for line in line_set.lines:
-            for i in range(4):
-                line_points = line_set.points[np.array(line)]
-                segment = o3d.geometry.LineSet.create_from_triangle_mesh(mesh_frame)
-                segment.translate(line_points[0])
-                lines.append(segment)
-
+        bbox = o3d.geometry.OrientedBoundingBox.create_from_points(o3d.utility.Vector3dVector(cluster))
         bounding_boxes.append(bbox)
-        bounding_boxes.extend(lines)
     return bounding_boxes
