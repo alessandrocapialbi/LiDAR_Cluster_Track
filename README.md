@@ -1,6 +1,4 @@
-### README
-
-# LiDAR Cluster Track
+# Clustering and Tracking on LiDAR data of vehicles in Pittsburgh
 
 ## Description
 This project uses clustering algorithms to analyze and visualize 3D point clouds obtained from scans of traffic by LiDAR sensors taken by the **Argoverse 2** dataset. Moreover, it implements tracking algorithms to keep identifying new vehicles during time. The program loads sensor scans, transforms the coordinates into a global system, performs clustering, and visualizes the results with bounding boxes.
