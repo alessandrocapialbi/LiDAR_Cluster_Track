@@ -5,6 +5,8 @@ from transform_coordinates import *
 import open3d as o3d
 from point_cloud_merger import merge_point_clouds
 from clustering import dbscan_clustering, create_bounding_boxes
+from simulation import update_visualization
+import time
 
 current_directory = os.path.dirname(os.path.abspath(__file__))
 point_cloud_directory = os.path.join(current_directory, 'filtered_sensors_data')
@@ -18,51 +20,59 @@ except ValueError:
     print("Please enter a valid number.")
     exit(1)
 
+# Select the sensors to use
 selected_sensors = select_sensors(num_sensors)
 
-# Load the point clouds from the selected sensors
-
-sensors_scans = load_point_clouds_from_sensors(point_cloud_directory, selected_sensors, 20)
-print(sensors_scans)
-
+# Load the sensors positions
 sensors_positions_df = load_sensor_positions(sensors_positions_path)
-print(sensors_positions_df)
 
 centroid = calculate_sensors_centroid(sensors_positions_df)
-print(centroid)
 
-point_clouds = []
-pcd_combined = o3d.geometry.PointCloud()
-'''''''''
-For every imported scan of the selected sensors transform the coordinates and create the new point cloud 
-with global coordinates 
-'''''''''
-for sensor_id, file_path in zip(selected_sensors, sensors_scans):
-    transformed_xyz = load_and_transform_scan(file_path, sensors_positions_df, centroid, sensor_id)
-    if transformed_xyz is not None:
-        print(file_path)
-        print("\n")
-        print(sensor_id)
-        print("\n")
-        print(transformed_xyz)
-        print("\n")
-        pcd = o3d.geometry.PointCloud()
-        pcd.points = o3d.utility.Vector3dVector(transformed_xyz)
-        point_clouds.append(pcd)
+# Create a visualizer instance
+vis = o3d.visualization.VisualizerWithKeyCallback()
+vis.create_window()
 
-# Merge the point clouds
-pcd_combined = merge_point_clouds(point_clouds)
-print("Number of points: ", len(pcd_combined.points))
+# Loop through scan indices from 20 to 70
+for i in range(20, 71):
 
-pcd_combined = downsample_pcd(pcd_combined, voxel_size=0.3)
-print("Number of points after the downsampling", len(pcd_combined.points))
+    point_clouds = []
+    # List to store the combined point cloud
+    combined_geometries = []
 
-clusters, labels = dbscan_clustering(pcd_combined, plot_k_distance= True )
-bounding_boxes = create_bounding_boxes(clusters)
+    bounding_boxes = []
 
-# Visualize the point cloud and the bounding boxes
-geometries = [pcd_combined] + bounding_boxes
-o3d.visualization.draw_geometries(geometries)
+    # Load the point clouds from the selected sensors
+    sensors_scans = load_point_clouds_from_sensors(point_cloud_directory, selected_sensors, i)
+    print(sensors_scans)
+
+    # Load and transform scans for each selected sensor
+    for sensor_id, sensor_scan in zip(selected_sensors, sensors_scans):
+        transformed_xyz = load_and_transform_scan(sensor_scan, sensors_positions_df, centroid, sensor_id)
+        if transformed_xyz is not None:
+            print(f"Loading scan {i} for sensor {sensor_id}")
+            pcd = o3d.geometry.PointCloud()
+            pcd.points = o3d.utility.Vector3dVector(transformed_xyz)
+            point_clouds.append(pcd)
+
+    # Merge the point clouds
+    pcd_combined = merge_point_clouds(point_clouds)
+    print("Number of points: ", len(pcd_combined.points))
+
+    # Downsample the point cloud
+    pcd_combined = downsample_pcd(pcd_combined, voxel_size=0.3)
+    print("Number of points after downsampling: ", len(pcd_combined.points))
+
+    # Perform DBSCAN clustering and create bounding boxes
+    clusters, labels = dbscan_clustering(pcd_combined, plot_k_distance=True)
+    bounding_boxes = create_bounding_boxes(clusters)
+
+    # Update the visualization
+    update_visualization(vis, pcd_combined, bounding_boxes)
+
+    # Pause for a short time to simulate time evolution
+    time.sleep(2)
+
+o3d.utility.set_verbosity_level(o3d.utility.VerbosityLevel.Info)
 
 """""
 sensors_points = np.genfromtxt(sensors_positions_path, delimiter=',', skip_header=1, usecols=[0, 1, 2])
