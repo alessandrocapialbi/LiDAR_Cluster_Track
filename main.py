@@ -4,8 +4,9 @@ from data_loader import *
 from transform_coordinates import *
 import open3d as o3d
 from point_cloud_merger import merge_point_clouds
-from clustering import dbscan_clustering, create_bounding_boxes
+from clustering import *
 from simulation import update_visualization
+from tracking import track_vehicles
 import time
 
 current_directory = os.path.dirname(os.path.abspath(__file__))
@@ -28,9 +29,11 @@ sensors_positions_df = load_sensor_positions(sensors_positions_path)
 
 centroid = calculate_sensors_centroid(sensors_positions_df)
 
-# Create a visualizer instance
-vis = o3d.visualization.VisualizerWithKeyCallback()
+vis = o3d.visualization.Visualizer()
 vis.create_window()
+
+prev_ids = []
+prev_bbox_centroids = []
 
 # Loop through scan indices from 20 to 70
 for i in range(20, 71):
@@ -64,13 +67,29 @@ for i in range(20, 71):
 
     # Perform DBSCAN clustering and create bounding boxes
     clusters, labels = dbscan_clustering(pcd_combined, plot_k_distance=True)
-    bounding_boxes = create_bounding_boxes(clusters)
+    bounding_boxes, bbox_centroids = create_bounding_boxes(clusters)
+
+    curr_ids = generate_ids(len(bbox_centroids))
+
+    # Track vehicles between scans considering the bounding box centroids
+    if prev_bbox_centroids:
+        matches, exited_vehicles, entered_vehicles = track_vehicles(prev_ids, curr_ids, prev_bbox_centroids, bbox_centroids)
+        print("Matches:", matches)
+        print("Exited vehicles:", exited_vehicles)
+        print("Newly entered vehicles:", entered_vehicles)
 
     # Update the visualization
     update_visualization(vis, pcd_combined, bounding_boxes)
 
+    # Update the previous bounding boxes and centroids
+    prev_ids = curr_ids
+    prev_bbox_centroids = bbox_centroids
+
     # Pause for a short time to simulate time evolution
-    time.sleep(2)
+    time.sleep(0.1)
+
+# Close the visualizer
+vis.destroy_window()
 
 o3d.utility.set_verbosity_level(o3d.utility.VerbosityLevel.Info)
 
