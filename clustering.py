@@ -56,7 +56,9 @@ def dbscan_clustering(pcd, eps=None, min_points=6, plot_k_distance=False):
 
 def create_bounding_boxes(clusters):
     bounding_boxes = []
+    bbox_centroids = []
     for cluster in clusters:
         bbox = o3d.geometry.OrientedBoundingBox.create_from_points(o3d.utility.Vector3dVector(cluster))
+        bbox_centroids.append(bbox.get_center())
         bounding_boxes.append(bbox)
-    return bounding_boxes
+    return bounding_boxes, bbox_centroids
