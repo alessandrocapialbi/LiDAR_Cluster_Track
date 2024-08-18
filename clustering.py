@@ -5,7 +5,6 @@ from sklearn.neighbors import NearestNeighbors
 from sklearn.metrics import silhouette_score
 from sklearn.metrics import davies_bouldin_score
 from sklearn.metrics import calinski_harabasz_score
-import matplotlib.pyplot as plt
 import os
 
 path = os.path.dirname(os.path.abspath(__file__))
@@ -47,9 +46,9 @@ def dbscan_clustering(pcd, eps=None, min_points=6, plot_k_distance=False):
     silhouette_avg = silhouette_score(points, labels)
     db_index = davies_bouldin_score(points, labels)
     ch_index = calinski_harabasz_score(points, labels)
-    print(f"Silhouette Score: {silhouette_avg}\n")
+    print(f"Silhouette Score: {silhouette_avg}")
     print(f"Davies-Bouldin Index: {db_index}")
-    print(f"Calinski-Harabasz Index: {ch_index}")
+    print(f"Calinski-Harabasz Index: {ch_index}\n")
 
     return clusters, labels
 
@@ -62,3 +61,8 @@ def create_bounding_boxes(clusters):
         bbox_centroids.append(bbox.get_center())
         bounding_boxes.append(bbox)
     return bounding_boxes, bbox_centroids
+
+
+# Generate IDs for the bounding box centroids
+def generate_ids(n):
+    return list(range(n))
