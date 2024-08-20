@@ -12,7 +12,7 @@ def compute_distance_matrix(prev_boxes, curr_boxes):
     return distance_matrix
 
 
-def track_vehicles(prev_ids, curr_ids, prev_centroids, curr_centroids, threshold=1.5):
+def track_vehicles(prev_centroids, curr_centroids, prev_ids, curr_ids, threshold=1):
     distance_matrix = compute_distance_matrix(prev_centroids, curr_centroids)
     row_ind, col_ind = linear_sum_assignment(distance_matrix)
 
