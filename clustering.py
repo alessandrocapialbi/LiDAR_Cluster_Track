@@ -5,10 +5,11 @@ from sklearn.neighbors import NearestNeighbors
 from sklearn.metrics import silhouette_score
 from sklearn.metrics import davies_bouldin_score
 from sklearn.metrics import calinski_harabasz_score
+import matplotlib.pyplot as plt
 import os
 
 path = os.path.dirname(os.path.abspath(__file__))
-output_file_path = os.path.join(path, 'transformed/color.csv')
+output_file_path = os.path.join(path, 'transformed/transformed.csv')
 
 
 def dbscan_clustering(pcd, eps=None, min_points=6, plot_k_distance=False):
@@ -19,7 +20,6 @@ def dbscan_clustering(pcd, eps=None, min_points=6, plot_k_distance=False):
         distances, _ = neighbors.kneighbors(points)
         k_distances_sorted = np.sort(distances, axis=0)[:, -1]
 
-        """""""""
         if plot_k_distance:
             # Plot the K-distance graph
             plt.figure(figsize=(10, 6))
@@ -29,7 +29,7 @@ def dbscan_clustering(pcd, eps=None, min_points=6, plot_k_distance=False):
             plt.title(f'K-distance Graph (min_samples = {min_points})')
             plt.grid(True)
             plt.show()
-        """""""""
+
         # Suggest an eps based on the point of maximum slope
         eps = k_distances_sorted[np.argmax(np.diff(k_distances_sorted))]
         print(f"Suggested eps: {eps}")
