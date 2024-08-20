@@ -2,7 +2,6 @@ from downsample_pcd import downsample_pcd
 from sensor_selection import select_sensors
 from data_loader import *
 from transform_coordinates import *
-import open3d as o3d
 from point_cloud_merger import merge_point_clouds
 from clustering import *
 from simulation import update_visualization
@@ -44,13 +43,19 @@ for i in range(20, 71):
 
     bounding_boxes = []
 
+    # List to store the object IDs for the current scan
+    curr_object_ids = []
+
     # Load the point clouds from the selected sensors
     sensors_scans = load_point_clouds_from_sensors(point_cloud_directory, selected_sensors, i)
     print(sensors_scans)
 
     # Load and transform scans for each selected sensor
     for sensor_id, sensor_scan in zip(selected_sensors, sensors_scans):
-        transformed_xyz = load_and_transform_scan(sensor_scan, sensors_positions_df, centroid, sensor_id)
+        transformed_xyz, object_ids = load_and_transform_scan(sensor_scan, sensors_positions_df, centroid, sensor_id)
+
+        curr_object_ids.extend(object_ids)
+
         if transformed_xyz is not None:
             print(f"Loading scan {i} for sensor {sensor_id}")
             pcd = o3d.geometry.PointCloud()
@@ -66,14 +71,14 @@ for i in range(20, 71):
     print("Number of points after downsampling: ", len(pcd_combined.points))
 
     # Perform DBSCAN clustering and create bounding boxes
-    clusters, labels = dbscan_clustering(pcd_combined, plot_k_distance=True)
+    clusters, labels = dbscan_clustering(pcd_combined)
     bounding_boxes, bbox_centroids = create_bounding_boxes(clusters)
 
     curr_ids = generate_ids(len(bbox_centroids))
 
     # Track vehicles between scans considering the bounding box centroids
     if prev_bbox_centroids:
-        matches, exited_vehicles, entered_vehicles = track_vehicles(prev_ids, curr_ids, prev_bbox_centroids, bbox_centroids)
+        matches, exited_vehicles, entered_vehicles = track_vehicles(prev_bbox_centroids, bbox_centroids, prev_ids, curr_ids)
         print("Matches:", matches)
         print("Exited vehicles:", exited_vehicles)
         print("Newly entered vehicles:", entered_vehicles)
@@ -140,11 +145,13 @@ for label in unique_labels:
 o3d.visualization.draw_geometries(geometries)
 '''''''''
 
-'''''''''
+"""""""""
 import numpy as np
 import open3d as o3d
+import os
 
-filename = "C:\\Users\\aless\\Desktop\\LiDARClusterTrack\\alessandrocapialbi\\LiDAR_Cluster_Track\\filtered_sensors_data\\sensor_2_20.csv"
+current_directory = os.path.dirname(os.path.abspath(__file__))
+filename = os.path.join(current_directory, 'filtered_sensors_data/sensor_0_20.csv')
 
 data = np.genfromtxt(filename, delimiter=',', skip_header=1, usecols=[5, 6, 7])
 
@@ -155,4 +162,4 @@ pcd.points = o3d.utility.Vector3dVector(data)
 # Visualizza la nuvola di punti
 o3d.visualization.draw_geometries([pcd])
 
-'''''''''
+"""""
