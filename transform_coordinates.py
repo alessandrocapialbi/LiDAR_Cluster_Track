@@ -19,7 +19,11 @@ def load_and_transform_scan(file_path, sensor_positions_df, center_sensors, sens
     # Load a scan, transform its coordinates into the global system, and return the transformed data.
     if os.path.exists(file_path):
         # Transform the CSV in a NumPy array
-        xyz = np.genfromtxt(file_path, delimiter=',', skip_header=1, usecols=[5, 6, 7])  # x, y, z are in cols 6, 7, 8
+        data = np.genfromtxt(file_path, delimiter=',', skip_header=1, usecols=[5, 6, 7, 11])
+
+        # Get the coordinates and object IDs
+        xyz = data[:, :3]  # x, y, z coordinates
+        object_ids = data[:, 3]  # Object IDs
 
         # Get the sensor information
         sensor_info = sensor_positions_df.iloc[sensor_id]
@@ -31,6 +35,6 @@ def load_and_transform_scan(file_path, sensor_positions_df, center_sensors, sens
             transformed_xyz = transform_coordinates(xyz, origin_sensor, center_sensors)
 
             # Return the transformed data
-            return transformed_xyz
+            return transformed_xyz, object_ids
 
     return None
