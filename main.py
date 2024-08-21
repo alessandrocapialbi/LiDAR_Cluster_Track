@@ -2,7 +2,6 @@ from downsample_pcd import downsample_pcd
 from sensor_selection import select_sensors
 from data_loader import *
 from transform_coordinates import *
-from point_cloud_merger import merge_point_clouds
 from clustering import *
 from simulation import update_visualization
 from tracking import track_vehicles
@@ -26,6 +25,7 @@ selected_sensors = select_sensors(num_sensors)
 # Load the sensors positions
 sensors_positions_df = load_sensor_positions(sensors_positions_path)
 
+# Calculate the centroid of the sensors
 centroid = calculate_sensors_centroid(sensors_positions_df)
 
 vis = o3d.visualization.Visualizer()
@@ -43,8 +43,8 @@ for i in range(20, 71):
 
     bounding_boxes = []
 
-    # List to store the object IDs for the current scan
-    curr_object_ids = []
+    all_transformed_xyz = []
+    all_object_ids = []
 
     # Load the point clouds from the selected sensors
     sensors_scans = load_point_clouds_from_sensors(point_cloud_directory, selected_sensors, i)
@@ -52,46 +52,45 @@ for i in range(20, 71):
 
     # Load and transform scans for each selected sensor
     for sensor_id, sensor_scan in zip(selected_sensors, sensors_scans):
+        print(f"Loading scan {i} for sensor {sensor_id}")
         transformed_xyz, object_ids = load_and_transform_scan(sensor_scan, sensors_positions_df, centroid, sensor_id)
+        all_transformed_xyz.append(transformed_xyz)
+        all_object_ids.extend(object_ids)
 
-        curr_object_ids.extend(object_ids)
+    # Convert to numpy arrays for easier handling
+    all_transformed_xyz = np.vstack(all_transformed_xyz)
 
-        if transformed_xyz is not None:
-            print(f"Loading scan {i} for sensor {sensor_id}")
-            pcd = o3d.geometry.PointCloud()
-            pcd.points = o3d.utility.Vector3dVector(transformed_xyz)
-            point_clouds.append(pcd)
+    if all_transformed_xyz is not None:
+        pcd_combined = o3d.geometry.PointCloud()
+        pcd_combined.points = o3d.utility.Vector3dVector(all_transformed_xyz)
+        print("Number of points before downsampling: ", len(pcd_combined.points))
+        pcd_combined = downsample_pcd(pcd_combined, voxel_size=0.3)
+        print("Number of points after downsampling: ", len(pcd_combined.points))
 
-    # Merge the point clouds
-    pcd_combined = merge_point_clouds(point_clouds)
-    print("Number of points: ", len(pcd_combined.points))
+        if i == 42:
+            print(42)
+        # Perform DBSCAN clustering and create bounding boxes
+        clusters, labels = dbscan_clustering(pcd_combined)
+        bounding_boxes, bbox_centroids = create_bounding_boxes(clusters)
+        bbox_ids = associate_ids_to_bboxes(bbox_centroids, all_object_ids, all_transformed_xyz)
 
-    # Downsample the point cloud
-    pcd_combined = downsample_pcd(pcd_combined, voxel_size=0.3)
-    print("Number of points after downsampling: ", len(pcd_combined.points))
+        # Track vehicles between scans considering the bounding box centroids
+        if prev_bbox_centroids:
+            matches, exited_vehicles, entered_vehicles = track_vehicles(prev_bbox_centroids, bbox_centroids, prev_ids,
+                                                                        bbox_ids)
+            print("Matches:", matches)
+            print("Exited vehicles:", exited_vehicles)
+            print("Newly entered vehicles:", entered_vehicles)
 
-    # Perform DBSCAN clustering and create bounding boxes
-    clusters, labels = dbscan_clustering(pcd_combined)
-    bounding_boxes, bbox_centroids = create_bounding_boxes(clusters)
+        # Update the visualization
+        update_visualization(vis, pcd_combined, bounding_boxes)
 
-    curr_ids = generate_ids(len(bbox_centroids))
+        # Update the previous bounding boxes and centroids
+        prev_ids = bbox_ids
+        prev_bbox_centroids = bbox_centroids
 
-    # Track vehicles between scans considering the bounding box centroids
-    if prev_bbox_centroids:
-        matches, exited_vehicles, entered_vehicles = track_vehicles(prev_bbox_centroids, bbox_centroids, prev_ids, curr_ids)
-        print("Matches:", matches)
-        print("Exited vehicles:", exited_vehicles)
-        print("Newly entered vehicles:", entered_vehicles)
-
-    # Update the visualization
-    update_visualization(vis, pcd_combined, bounding_boxes)
-
-    # Update the previous bounding boxes and centroids
-    prev_ids = curr_ids
-    prev_bbox_centroids = bbox_centroids
-
-    # Pause for a short time to simulate time evolution
-    time.sleep(0.1)
+        # Pause for a short time to simulate time evolution
+        time.sleep(0.1)
 
 # Close the visualizer
 vis.destroy_window()
@@ -103,7 +102,7 @@ sensors_points = np.genfromtxt(sensors_positions_path, delimiter=',', skip_heade
 sensors_geometry = o3d.geometry.PointCloud()
 sensors_geometry.points = o3d.utility.Vector3dVector(sensors_points)
 o3d.visualization.draw_geometries([sensors_geometry])
-"""""
+"""""""
 
 '''''''''
 points = np.asarray(pcd_combined.points)
@@ -145,13 +144,15 @@ for label in unique_labels:
 o3d.visualization.draw_geometries(geometries)
 '''''''''
 
-"""""""""
+"""""
+
+"""""
 import numpy as np
 import open3d as o3d
 import os
 
 current_directory = os.path.dirname(os.path.abspath(__file__))
-filename = os.path.join(current_directory, 'filtered_sensors_data/sensor_0_20.csv')
+filename = os.path.join(current_directory, 'filtered_sensors_data/sensor_3_20.csv')
 
 data = np.genfromtxt(filename, delimiter=',', skip_header=1, usecols=[5, 6, 7])
 
