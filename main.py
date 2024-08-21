@@ -1,4 +1,3 @@
-from downsample_pcd import downsample_pcd
 from sensor_selection import select_sensors
 from data_loader import *
 from transform_coordinates import *
@@ -64,11 +63,9 @@ for i in range(20, 71):
         pcd_combined = o3d.geometry.PointCloud()
         pcd_combined.points = o3d.utility.Vector3dVector(all_transformed_xyz)
         print("Number of points before downsampling: ", len(pcd_combined.points))
-        pcd_combined = downsample_pcd(pcd_combined, voxel_size=0.3)
+        pcd_combined = pcd_combined.voxel_down_sample(voxel_size=0.3)
         print("Number of points after downsampling: ", len(pcd_combined.points))
 
-        if i == 42:
-            print(42)
         # Perform DBSCAN clustering and create bounding boxes
         clusters, labels = dbscan_clustering(pcd_combined)
         bounding_boxes, bbox_centroids = create_bounding_boxes(clusters)
