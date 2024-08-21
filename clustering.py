@@ -1,4 +1,3 @@
-import numpy as np
 import open3d as o3d
 from sklearn.cluster import DBSCAN
 from sklearn.neighbors import NearestNeighbors
@@ -12,7 +11,7 @@ path = os.path.dirname(os.path.abspath(__file__))
 output_file_path = os.path.join(path, 'transformed/transformed.csv')
 
 
-def dbscan_clustering(pcd, eps=None, min_points=6, plot_k_distance=False):
+def dbscan_clustering(pcd, eps=None, min_points=10, plot_k_distance=False):
     points = np.asarray(pcd.points)
     if eps is None:
         # Calculate the K-distance graph to determine eps
@@ -63,6 +62,21 @@ def create_bounding_boxes(clusters):
     return bounding_boxes, bbox_centroids
 
 
-# Generate IDs for the bounding box centroids
-def generate_ids(n):
-    return list(range(n))
+import numpy as np
+
+def associate_ids_to_bboxes(centroids, object_ids, transformed_xyz):
+    """
+    Associates object IDs to bounding box centroids based on the minimum distance.
+    """
+    # Initialize a list for associations
+    bbox_ids = [None] * len(centroids)
+
+    for i, centroid in enumerate(centroids):
+        # Calculate the distance between the centroid and all points
+        distances = np.linalg.norm(transformed_xyz - np.array(centroid), axis=1)
+        # Find the ID of the closest point
+        closest_point_index = np.argmin(distances)
+        bbox_ids[i] = object_ids[closest_point_index]
+
+    return bbox_ids
+
