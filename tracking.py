@@ -12,7 +12,7 @@ def compute_distance_matrix(prev_boxes, curr_boxes):
     return distance_matrix
 
 
-def track_vehicles(prev_centroids, curr_centroids, prev_ids, curr_ids, threshold=1):
+def track_vehicles(prev_centroids, curr_centroids, prev_ids, curr_ids, threshold=2):
     distance_matrix = compute_distance_matrix(prev_centroids, curr_centroids)
     row_ind, col_ind = linear_sum_assignment(distance_matrix)
 
@@ -26,7 +26,8 @@ def track_vehicles(prev_centroids, curr_centroids, prev_ids, curr_ids, threshold
             unmatched_prev.discard(r)
             unmatched_curr.discard(c)
 
-    exited_vehicles = list(unmatched_prev)
-    entered_vehicles = list(unmatched_curr)
+    # Convert to actual IDs
+    exited_vehicles = [prev_ids[i] for i in unmatched_prev]
+    entered_vehicles = [curr_ids[i] for i in unmatched_curr]
 
     return matches, exited_vehicles, entered_vehicles
