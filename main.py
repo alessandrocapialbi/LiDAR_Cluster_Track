@@ -1,14 +1,18 @@
+import time
 from sensor_selection import select_sensors
 from data_loader import *
 from transform_coordinates import *
 from clustering import *
 from simulation import update_visualization
-from tracking import track_vehicles
-import time
+from tracking import track_vehicles, calculate_threshold
+import pandas as pd
 
 current_directory = os.path.dirname(os.path.abspath(__file__))
 point_cloud_directory = os.path.join(current_directory, 'filtered_sensors_data')
 sensors_positions_path = os.path.join(current_directory, 'sensors_positions/pitt_sensor_positions.csv')
+trajectories_path = os.path.join(current_directory, 'trajectories/pitt_trajectories.csv')
+
+frequency = 10
 
 # Choose the total number of sensors available
 print("Enter the total number of sensors available: ")
@@ -22,7 +26,13 @@ except ValueError:
 selected_sensors = select_sensors(num_sensors)
 
 # Load the sensors positions
-sensors_positions_df = load_sensor_positions(sensors_positions_path)
+sensors_positions_df = load_file(sensors_positions_path)
+
+# Load the trajectories
+trajectories_df = load_file(trajectories_path)
+
+# Calculate the threshold for the tracking algorithm
+threshold = calculate_threshold(trajectories_df) * (1 / frequency)
 
 # Calculate the centroid of the sensors
 centroid = calculate_sensors_centroid(sensors_positions_df)
@@ -43,6 +53,7 @@ for i in range(20, 71):
     bounding_boxes = []
 
     all_transformed_xyz = []
+
     all_object_ids = []
 
     # Load the point clouds from the selected sensors
@@ -74,19 +85,19 @@ for i in range(20, 71):
         # Track vehicles between scans considering the bounding box centroids
         if prev_bbox_centroids:
             matches, exited_vehicles, entered_vehicles = track_vehicles(prev_bbox_centroids, bbox_centroids, prev_ids,
-                                                                        bbox_ids)
-            print("Matches:", matches)
-            print("Exited vehicles:", exited_vehicles)
-            print("Newly entered vehicles:", entered_vehicles)
+                                                                        bbox_ids,
+                                                                        threshold + threshold * 0.15)  # 15% threshold increase since the vehicles are moving and we consider centroids
+            print("Matches:\n", pd.DataFrame(matches))
+            print("Exited vehicles:", pd.DataFrame(exited_vehicles))
+            print("Newly entered vehicles:", pd.DataFrame(entered_vehicles))
 
-        # Update the visualization
-        update_visualization(vis, pcd_combined, bounding_boxes)
+            # Update the visualization including trajectories
+            update_visualization(vis, pcd_combined, bounding_boxes)
 
         # Update the previous bounding boxes and centroids
         prev_ids = bbox_ids
         prev_bbox_centroids = bbox_centroids
 
-        # Pause for a short time to simulate time evolution
         time.sleep(0.1)
 
 # Close the visualizer
