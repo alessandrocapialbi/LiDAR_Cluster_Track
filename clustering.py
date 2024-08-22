@@ -5,6 +5,7 @@ from sklearn.metrics import silhouette_score
 from sklearn.metrics import davies_bouldin_score
 from sklearn.metrics import calinski_harabasz_score
 import matplotlib.pyplot as plt
+import numpy as np
 import os
 
 path = os.path.dirname(os.path.abspath(__file__))
@@ -61,8 +62,6 @@ def create_bounding_boxes(clusters):
         bounding_boxes.append(bbox)
     return bounding_boxes, bbox_centroids
 
-
-import numpy as np
 
 def associate_ids_to_bboxes(centroids, object_ids, transformed_xyz):
     """
