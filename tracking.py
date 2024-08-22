@@ -33,10 +33,10 @@ def track_vehicles(prev_centroids, curr_centroids, prev_ids, curr_ids, threshold
     return matches, exited_vehicles, entered_vehicles
 
 
-def calculate_threshold(df):
+def calculate_threshold(df, sensor_frequency, percentage_margin):
     vx = df['vx']
     vy = df['vy']
-
     v_max = (np.sqrt(vx ** 2 + vy ** 2)).max()
+    threshold = v_max * (1/sensor_frequency)
+    return threshold + threshold * (percentage_margin/100)
 
-    return v_max
