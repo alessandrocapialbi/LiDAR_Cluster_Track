@@ -32,7 +32,7 @@ sensors_positions_df = load_file(sensors_positions_path)
 trajectories_df = load_file(trajectories_path)
 
 # Calculate the threshold for the tracking algorithm
-threshold = calculate_threshold(trajectories_df) * (1 / frequency)
+tracking_threshold = calculate_threshold(trajectories_df, frequency, percentage_margin=15)
 
 # Calculate the centroid of the sensors
 centroid = calculate_sensors_centroid(sensors_positions_df)
@@ -86,7 +86,7 @@ for i in range(20, 71):
         if prev_bbox_centroids:
             matches, exited_vehicles, entered_vehicles = track_vehicles(prev_bbox_centroids, bbox_centroids, prev_ids,
                                                                         bbox_ids,
-                                                                        threshold + threshold * 0.15)  # 15% threshold increase since the vehicles are moving and we consider centroids
+                                                                        tracking_threshold)
             print("Matches:\n", pd.DataFrame(matches))
             print("Exited vehicles:", pd.DataFrame(exited_vehicles))
             print("Newly entered vehicles:", pd.DataFrame(entered_vehicles))
