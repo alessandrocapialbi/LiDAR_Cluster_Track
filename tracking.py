@@ -12,7 +12,7 @@ def compute_distance_matrix(prev_boxes, curr_boxes):
     return distance_matrix
 
 
-def track_vehicles(prev_centroids, curr_centroids, prev_ids, curr_ids, threshold=2):
+def track_vehicles(prev_centroids, curr_centroids, prev_ids, curr_ids, threshold):
     distance_matrix = compute_distance_matrix(prev_centroids, curr_centroids)
     row_ind, col_ind = linear_sum_assignment(distance_matrix)
 
@@ -31,3 +31,12 @@ def track_vehicles(prev_centroids, curr_centroids, prev_ids, curr_ids, threshold
     entered_vehicles = [curr_ids[i] for i in unmatched_curr]
 
     return matches, exited_vehicles, entered_vehicles
+
+
+def calculate_threshold(df):
+    vx = df['vx']
+    vy = df['vy']
+
+    v_max = (np.sqrt(vx ** 2 + vy ** 2)).max()
+
+    return v_max
