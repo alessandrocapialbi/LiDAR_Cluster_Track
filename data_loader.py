@@ -14,12 +14,7 @@ def load_point_clouds_from_sensors(directory, sensor_ids, scan_number):
     return filenames
 
 
-def load_sensor_positions(sensor_positions):
+def load_file(file_path):
     # Load the sensor positions from the CSV file.
-    df = pd.read_csv(sensor_positions)
+    df = pd.read_csv(file_path)
     return df
-
-
-# Read the trajectories from the pitt_trajectories.csv file.
-def load_trajectories(file_path):
-    return np.loadtxt(file_path, delimiter=',', skiprows=1)
