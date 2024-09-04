@@ -76,9 +76,7 @@ def track_vehicles(prev_centroids, curr_centroids, prev_ids, curr_ids, threshold
             curr_pos = curr_centroids[c]
             prev_velocity = kf.X[3:5]
             curr_velocity = compute_velocity(prev_pos, curr_pos, delta_time)
-            print(f"Prev velocity of {prev_ids[r]}: {prev_velocity}, Curr velocity: {curr_velocity}")
             acceleration = compute_acceleration(prev_velocity, curr_velocity, delta_time)
-            print(f"Acceleration of {prev_ids[r]}: {acceleration}")
 
             # Update the Kalman filter with the actual measurement
             kf.update(curr_pos)
@@ -106,9 +104,10 @@ def track_vehicles(prev_centroids, curr_centroids, prev_ids, curr_ids, threshold
 
     return matches, exited_vehicles, entered_vehicles
 
+
 def calculate_threshold(df, sensor_frequency, percentage_margin):
     vx = df['vx']
     vy = df['vy']
-    v_max = (np.sqrt(vx ** 2 + vy ** 2)).max()
+    v_max = (np.sqrt(pow(vx, 2) + pow(vy, 2))).max()
     threshold = v_max * (1 / sensor_frequency)
     return threshold + threshold * (percentage_margin / 100)
