@@ -43,18 +43,24 @@ vis.create_window()
 prev_ids = []
 prev_bbox_centroids = []
 
+trajectories = {}
+
+vehicle_colors = {}
+
+
 # Loop through scan indices from 20 to 70
+def generate_random_color():
+    return np.random.uniform(0, 1, 3)
+
+
 for i in range(20, 71):
 
     point_clouds = []
-    # List to store the combined point cloud
     combined_geometries = []
-
     bounding_boxes = []
-
     all_transformed_xyz = []
-
     all_object_ids = []
+    predicted_centroids = []
 
     # Load the point clouds from the selected sensors
     sensors_scans = load_point_clouds_from_sensors(point_cloud_directory, selected_sensors, i)
@@ -63,7 +69,8 @@ for i in range(20, 71):
     # Load and transform scans for each selected sensor
     for sensor_id, sensor_scan in zip(selected_sensors, sensors_scans):
         print(f"Loading scan {i} for sensor {sensor_id}")
-        transformed_xyz, object_ids = load_and_transform_scan(sensor_scan, sensors_positions_df, centroid, sensor_id)
+        transformed_xyz, object_ids = load_and_transform_scan(sensor_scan, sensors_positions_df, centroid,
+                                                              sensor_id)
         all_transformed_xyz.append(transformed_xyz)
         all_object_ids.extend(object_ids)
 
@@ -84,91 +91,51 @@ for i in range(20, 71):
 
         # Track vehicles between scans considering the bounding box centroids
         if prev_bbox_centroids:
-            matches, exited_vehicles, entered_vehicles = track_vehicles(prev_bbox_centroids, bbox_centroids, prev_ids,
-                                                                        bbox_ids,
-                                                                        tracking_threshold, frequency)
+            matches, exited_vehicles, entered_vehicles, predicted_centroids = track_vehicles(prev_bbox_centroids,
+                                                                                             bbox_centroids,
+                                                                                             prev_ids,
+                                                                                             bbox_ids,
+                                                                                             tracking_threshold,
+                                                                                             frequency)
             print("Matches:\n", pd.DataFrame(matches))
             print("Exited vehicles:", pd.DataFrame(exited_vehicles))
             print("Newly entered vehicles:", pd.DataFrame(entered_vehicles))
 
-            # Update the visualization including trajectories
-            update_visualization(vis, pcd_combined, bounding_boxes)
+            for prev_id, current_id in matches:
+                if current_id in bbox_ids:
+                    current_centroid = bbox_centroids[bbox_ids.index(current_id)]
+                    # If the vehicle ID is not in the dictionary, add it
+                    if prev_id not in trajectories:
+                        trajectories[prev_id] = []
+
+                    # Append the current centroid to the trajectory
+                    trajectories[prev_id].append(current_centroid)
+
+        # Draw the trajectories
+        trajectory_lines = []
+        if i == 22:
+            print("22")
+        for vehicle_id, points in trajectories.items():
+            if len(points) > 1:
+                lines = np.asarray([[i, i + 1] for i in range(len(points) - 1)], dtype=np.int32)
+                line_set = o3d.geometry.LineSet()
+                line_set.points = o3d.utility.Vector3dVector(np.asarray(points))
+                line_set.lines = o3d.utility.Vector2iVector(lines)
+                if vehicle_id not in vehicle_colors:
+                    vehicle_colors[vehicle_id] = generate_random_color()
+                colors = np.array([vehicle_colors[vehicle_id] for _ in range(len(lines))], dtype=np.float64)
+                line_set.colors = o3d.utility.Vector3dVector(colors)
+                trajectory_lines.append(line_set)
+
+        # Update the visualization including trajectories
+        update_visualization(vis, pcd_combined, bounding_boxes + trajectory_lines)
 
         # Update the previous bounding boxes and centroids
         prev_ids = bbox_ids
         prev_bbox_centroids = bbox_centroids
 
-        time.sleep(0.1)
+    time.sleep(0.1)
 
 # Close the visualizer
 vis.destroy_window()
-
 o3d.utility.set_verbosity_level(o3d.utility.VerbosityLevel.Info)
-
-"""""
-sensors_points = np.genfromtxt(sensors_positions_path, delimiter=',', skip_header=1, usecols=[0, 1, 2])
-sensors_geometry = o3d.geometry.PointCloud()
-sensors_geometry.points = o3d.utility.Vector3dVector(sensors_points)
-o3d.visualization.draw_geometries([sensors_geometry])
-"""""""
-
-'''''''''
-points = np.asarray(pcd_combined.points)
-print("Cloud point size", points.shape)
-
-dbscan = DBSCAN(eps=0.5, min_samples=10)
-clusters = dbscan.fit_predict(points)
-
-unique_labels = np.unique(clusters)
-print("Cluster labels", unique_labels)
-
-cmap = plt.colormaps['tab10']  # Accesso alla mappa di colori 'tab10'
-
-# Crea una lista per gli oggetti di geometria da visualizzare
-geometries = [pcd_combined]
-
-# Calcola la bounding box per ogni cluster
-for label in unique_labels:
-    if label == -1:
-        # Skip noise points
-        continue
-
-    # Trova i punti appartenenti al cluster corrente
-    cluster_points = points[clusters == label]
-
-    # Crea una point cloud per il cluster corrente
-    cluster_pcd = o3d.geometry.PointCloud()
-    cluster_pcd.points = o3d.utility.Vector3dVector(cluster_points)
-
-    # Calcola la bounding box del cluster
-    bbox = cluster_pcd.get_axis_aligned_bounding_box()
-    color = cmap(label / len(unique_labels))[:3]  # Assegna solo RGB
-    bbox.color = color
-
-    # Aggiungi la bounding box alla lista delle geometrie
-    geometries.append(bbox)
-
-# Visualizza la point cloud e le bounding box
-o3d.visualization.draw_geometries(geometries)
-'''''''''
-
-"""""
-
-"""""
-import numpy as np
-import open3d as o3d
-import os
-
-current_directory = os.path.dirname(os.path.abspath(__file__))
-filename = os.path.join(current_directory, 'filtered_sensors_data/sensor_3_20.csv')
-
-data = np.genfromtxt(filename, delimiter=',', skip_header=1, usecols=[5, 6, 7])
-
-pcd = o3d.geometry.PointCloud()
-print("Numero di punti: ", len(data))
-pcd.points = o3d.utility.Vector3dVector(data)
-
-# Visualizza la nuvola di punti
-o3d.visualization.draw_geometries([pcd])
-
-"""""
