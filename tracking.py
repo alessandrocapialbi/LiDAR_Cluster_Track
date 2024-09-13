@@ -102,7 +102,7 @@ def track_vehicles(prev_centroids, curr_centroids, prev_ids, curr_ids, threshold
         if vehicle_id in kalman_filters:
             del kalman_filters[vehicle_id]
 
-    return matches, exited_vehicles, entered_vehicles
+    return matches, exited_vehicles, entered_vehicles, predicted_centroids
 
 
 def calculate_threshold(df, sensor_frequency, percentage_margin):

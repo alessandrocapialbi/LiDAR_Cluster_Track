@@ -1,10 +1,10 @@
-def visualize(vis, pcd_combined, bounding_boxes):
+def visualize(vis, pcd_combined, bboxes_and_trajectories):
     # Clear previous geometries
     vis.clear_geometries()
 
     # Add new geometries
     vis.add_geometry(pcd_combined)
-    for bbox in bounding_boxes:
+    for bbox in bboxes_and_trajectories:
         vis.add_geometry(bbox)
 
     # Update the visualization
