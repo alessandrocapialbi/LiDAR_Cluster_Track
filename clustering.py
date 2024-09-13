@@ -58,6 +58,7 @@ def create_bounding_boxes(clusters):
     bbox_centroids = []
     for cluster in clusters:
         bbox = o3d.geometry.OrientedBoundingBox.create_from_points(o3d.utility.Vector3dVector(cluster))
+        bbox.color = [0.0, 0.0, 0.0]
         bbox_centroids.append(bbox.get_center())
         bounding_boxes.append(bbox)
     return bounding_boxes, bbox_centroids
