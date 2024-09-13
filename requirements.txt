@@ -39,7 +39,7 @@ matplotlib==3.9.2
 matplotlib-inline==0.1.7
 nbformat==5.10.4
 nest-asyncio==1.6.0
-numpy==2.1.1
+numpy==1.26.4
 open3d==0.18.0
 packaging==24.1
 pandas==2.2.2
