@@ -113,8 +113,6 @@ for i in range(20, 71):
 
         # Draw the trajectories
         trajectory_lines = []
-        if i == 22:
-            print("22")
         for vehicle_id, points in trajectories.items():
             if len(points) > 1:
                 lines = np.asarray([[i, i + 1] for i in range(len(points) - 1)], dtype=np.int32)
