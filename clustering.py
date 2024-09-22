@@ -6,13 +6,14 @@ from sklearn.metrics import davies_bouldin_score
 from sklearn.metrics import calinski_harabasz_score
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import os
 
 path = os.path.dirname(os.path.abspath(__file__))
-output_file_path = os.path.join(path, 'transformed/transformed.csv')
+output_file_path = os.path.join(path, 'output/point_clouds.csv')
 
 
-def dbscan_clustering(pcd, eps=None, min_points=10, plot_k_distance=False):
+def dbscan_clustering(pcd, eps=None, min_points=10, plot_k_distance=False, append = True):
     points = np.asarray(pcd.points)
     if eps is None:
         # Calculate the K-distance graph to determine eps
@@ -42,6 +43,13 @@ def dbscan_clustering(pcd, eps=None, min_points=10, plot_k_distance=False):
     # Create clusters
     unique_labels = set(labels)
     clusters = [points[labels == label] for label in unique_labels if label != -1]
+
+    # Save labeled points to CSV
+    labeled_points = np.hstack((points, labels.reshape(-1, 1)))
+    df = pd.DataFrame(labeled_points, columns=['x', 'y', 'z', 'label'])
+    mode = 'a' if append else 'w'
+    header = not append
+    df.to_csv(output_file_path, mode=mode, header=header, index=False)
 
     silhouette_avg = silhouette_score(points, labels)
     db_index = davies_bouldin_score(points, labels)
