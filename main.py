@@ -85,8 +85,8 @@ for i in range(20, 71):
         print("Number of points after downsampling: ", len(pcd_combined.points))
 
         # Perform DBSCAN clustering and create bounding boxes
-        clusters, labels = dbscan_clustering(pcd_combined)
-        bounding_boxes, bbox_centroids = create_bounding_boxes(clusters)
+        clusters, labels = dbscan_clustering(pcd_combined, i)
+        bounding_boxes, bbox_centroids = create_bounding_boxes(clusters, i)
         bbox_ids = associate_ids_to_bboxes(bbox_centroids, all_object_ids, all_transformed_xyz)
 
         # Track vehicles between scans considering the bounding box centroids

@@ -9,11 +9,13 @@ import numpy as np
 import pandas as pd
 import os
 
+
 path = os.path.dirname(os.path.abspath(__file__))
-output_file_path = os.path.join(path, 'output/point_clouds.csv')
+point_clouds_file_path = os.path.join(path, 'output/point_clouds.csv')
+bounding_boxes_file_path = os.path.join(path, 'output/bounding_boxes.csv')
 
 
-def dbscan_clustering(pcd, eps=None, min_points=10, plot_k_distance=False, append = True):
+def dbscan_clustering(pcd, scan_number, eps=None, min_points=10, plot_k_distance=False, append = True):
     points = np.asarray(pcd.points)
     if eps is None:
         # Calculate the K-distance graph to determine eps
@@ -45,11 +47,12 @@ def dbscan_clustering(pcd, eps=None, min_points=10, plot_k_distance=False, appen
     clusters = [points[labels == label] for label in unique_labels if label != -1]
 
     # Save labeled points to CSV
-    labeled_points = np.hstack((points, labels.reshape(-1, 1)))
-    df = pd.DataFrame(labeled_points, columns=['x', 'y', 'z', 'label'])
+    scan_numbers = np.full((points.shape[0], 1), scan_number)
+    labeled_points = np.hstack((scan_numbers, points, labels.reshape(-1, 1)))
+    df = pd.DataFrame(labeled_points, columns=['scan', 'x', 'y', 'z', 'label'])
     mode = 'a' if append else 'w'
     header = not append
-    df.to_csv(output_file_path, mode=mode, header=header, index=False)
+    df.to_csv(point_clouds_file_path, mode=mode, header=header, index=False)
 
     silhouette_avg = silhouette_score(points, labels)
     db_index = davies_bouldin_score(points, labels)
@@ -61,14 +64,29 @@ def dbscan_clustering(pcd, eps=None, min_points=10, plot_k_distance=False, appen
     return clusters, labels
 
 
-def create_bounding_boxes(clusters):
+def create_bounding_boxes(clusters, scan_number, append = True):
     bounding_boxes = []
     bbox_centroids = []
+    bbox_coordinates = []
     for cluster in clusters:
         bbox = o3d.geometry.OrientedBoundingBox.create_from_points(o3d.utility.Vector3dVector(cluster))
         bbox.color = [0.0, 0.0, 0.0]
         bbox_centroids.append(bbox.get_center())
         bounding_boxes.append(bbox)
+        bbox_coordinates.append(bbox.get_box_points())
+
+
+    # Save bounding box coordinates to CSV
+    bbox_data = []
+    for i, bbox in enumerate(bbox_coordinates):
+        for point in bbox:
+            bbox_data.append([scan_number, i] + point.tolist())
+
+    df_bbox = pd.DataFrame(bbox_data, columns=['scan', 'bbox_id', 'x', 'y', 'z'])
+    mode = 'a' if append else 'w'
+    header = not append
+    df_bbox.to_csv(bounding_boxes_file_path, mode=mode, header=header, index=False)
+
     return bounding_boxes, bbox_centroids
 
 
