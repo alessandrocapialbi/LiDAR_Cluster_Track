@@ -112,6 +112,18 @@ for i in range(20, 71):
                     # Append the current centroid to the trajectory
                     trajectories[prev_id].append(current_centroid)
 
+
+        # Save predicted trajectories to CSV
+        trajectory_data = []
+        for vehicle_id, points in trajectories.items():
+            if points:
+                last_point = points[-1]
+                trajectory_data.append([i, vehicle_id] + last_point.tolist())
+
+
+        df_trajectories = pd.DataFrame(trajectory_data, columns=['scan', 'vehicle_id', 'x', 'y', 'z'])
+        df_trajectories.to_csv(predicted_trajectories_file_path, mode='a', header=False, index=False)
+
         # Draw the trajectories
         trajectory_lines = []
         for vehicle_id, points in trajectories.items():
