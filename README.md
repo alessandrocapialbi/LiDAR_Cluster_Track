@@ -1,63 +1,84 @@
-# Clustering and Tracking on LiDAR data of vehicles in Pittsburgh
+# Clustering and Vehicle Tracking of vehicles in Pittsburgh with Visualization
 
-## Description
-This project uses clustering algorithms to analyze and visualize 3D point clouds obtained from scans of traffic by LiDAR sensors taken by the **Argoverse 2** dataset. Moreover, it implements tracking algorithms to keep identifying new vehicles during time. The program loads sensor scans, transforms the coordinates into a global system, performs clustering, and visualizes the results with bounding boxes.
+This project involves clustering and tracking vehicles using point cloud data from multiple sensors taken by the dataset **Argoverse 2**. The data is processed to transform coordinates, perform clustering, tracking and visualize the results using Open3D.
 
-## Requirements
-- Python 3.x
-- pip
+## Table of Contents
+- [Installation](#installation)
+- [Usage](#usage)
+- [Project Structure](#project-structure)
+- [Modules](#modules)
+- [License](#license)
 
 ## Installation
+
 1. Clone the repository:
     ```sh
-    git clone <https://github.com/alessandrocapialbi/LiDAR_Cluster_Track/>
-    cd <repository_directory>
+    git clone https://github.com/alessandrocapialbi/LiDAR_Cluster_Track
+    cd LiDAR_Cluster_Track
     ```
 
-2. Install the dependencies:
+2. Create a virtual environment and activate it:
+    ```sh
+    python3 -m venv venv
+    source venv/bin/activate
+    ```
+
+3. Install the required packages:
     ```sh
     pip install -r requirements.txt
     ```
 
 ## Usage
-1. Run the main program:
+
+1. Run the main script:
     ```sh
     python main.py
     ```
 
-2. Follow the on-screen instructions to enter the number of available sensors.
+2. Follow the prompts to enter the number of sensors.
 
-## Main Files
-- `main.py`: Contains the main program flow, including sensor selection, point cloud loading, and result visualization.
-- `clustering.py`: Contains functions for performing DBSCAN clustering and creating bounding boxes.
+## Project Structure
 
-## Main Functions
+```plaintext
+LiDAR_Cluster_Track/
+├── data_loader.py
+├── main.py
+├── clustering.py
+├── simulation.py
+├── transform_coordinates.py
+├── tracking.py
+├── sensor_selection.py
+├── sensors_data/
+├── filtered_sensors_data/
+├── sensors_positions/
+│   └── pitt_sensor_positions.csv
+└── trajectories/
+    └── pitt_trajectories.csv
+```
+
+## Modules
+
 ### `main.py`
-- `select_sensors(num_sensors)`: Selects the sensors to use.
-- `load_point_clouds_from_sensors(directory, selected_sensors, num_scans)`: Loads point clouds from the selected sensors.
-- `load_sensor_positions(path)`: Loads sensor positions.
-- `calculate_sensors_centroid(df)`: Calculates the centroid of the sensor positions.
-- `load_and_transform_scan(file_path, sensors_positions_df, centroid, sensor_id)`: Transforms scan coordinates into a global system.
-- `merge_point_clouds(point_clouds)`: Merges the point clouds.
-- `downsample_pcd(pcd, voxel_size)`: Downsamples the point cloud.
-- `dbscan_clustering(pcd, plot_k_distance)`: Performs DBSCAN clustering.
-- `create_bounding_boxes(clusters)`: Creates bounding boxes for the clusters.
+The main script that orchestrates the loading, processing, and visualization of point cloud data.
+
+### `data_loader.py`
+Contains functions to load data from files.
 
 ### `clustering.py`
-- `dbscan_clustering(pcd, eps, min_points, plot_k_distance)`: Performs DBSCAN clustering and calculates evaluation scores.
-- `create_bounding_boxes(clusters)`: Creates bounding boxes for the clusters.
+Performs DBSCAN clustering on the point cloud data and creates bounding boxes.
 
-## Clustering Evaluation
-The program calculates three evaluation scores for the clustering:
-- **Silhouette Score**
-- **Davies-Bouldin Index**
-- **Calinski-Harabasz Index**
+### `simulation.py`
+Handles the visualization of point clouds and trajectories using Open3D.
 
-## Visualization
-The program uses `open3d` to visualize the point clouds and the bounding boxes of the clusters.
+### `transform_coordinates.py`
+Transforms the coordinates of the point cloud data to a global coordinate system, considering translations and rotations.
 
-## Contributions
-Contributions are welcome! Feel free to open issues or pull requests to improve the project.
+### `tracking.py`
+Tracks vehicles between scans based on bounding box centroids.
+
+### `sensor_selection.py`
+Allows the user to select the sensors to use for the tracking.
 
 ## License
-This project is distributed under the MIT license. See the `LICENSE` file for more details.
+
+This project is licensed under the MIT License. See the `LICENSE` file for more details.
