@@ -11,6 +11,7 @@ current_directory = os.path.dirname(os.path.abspath(__file__))
 point_cloud_directory = os.path.join(current_directory, 'filtered_sensors_data')
 sensors_positions_path = os.path.join(current_directory, 'sensors_positions/pitt_sensor_positions.csv')
 trajectories_path = os.path.join(current_directory, 'trajectories/pitt_trajectories.csv')
+predicted_trajectories_file_path = os.path.join(current_directory, 'output/predicted_trajectories.csv')
 
 frequency = 10
 
