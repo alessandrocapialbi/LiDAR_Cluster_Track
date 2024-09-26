@@ -54,6 +54,11 @@ LiDAR_Cluster_Track/
 │   └── pitt_sensor_positions.csv
 └── trajectories/
     └── pitt_trajectories.csv
+└── output/
+    └── point_clouds.csv
+    └── bounding_boxes.csv
+    └── predicted_trajectories.csv
+
 ```
 
 ## Modules
@@ -72,6 +77,9 @@ Handles the visualization of point clouds and trajectories using Open3D.
 
 ### `transform_coordinates.py`
 Transforms the coordinates of the point cloud data to a global coordinate system, considering translations and rotations.
+
+### `kalman_filter.py`
+Implements a LKF (Linear Kalman Filter) to predict the trajectories of the vehicles.
 
 ### `tracking.py`
 Tracks vehicles between scans based on bounding box centroids.
