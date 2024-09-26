@@ -12,6 +12,6 @@ def visualize(vis, pcd_combined, bboxes_and_trajectories):
     vis.update_renderer()
 
 
-def update_visualization(vis, pcd_combined, bounding_boxes):
+def update_visualization(vis, pcd_combined, bboxes_and_trajectories):
     # Update the visualization in the main thread
-    visualize(vis, pcd_combined, bounding_boxes)
+    visualize(vis, pcd_combined, bboxes_and_trajectories)
