@@ -9,13 +9,16 @@ import numpy as np
 import pandas as pd
 import os
 
-
 path = os.path.dirname(os.path.abspath(__file__))
 point_clouds_file_path = os.path.join(path, 'output/point_clouds.csv')
 bounding_boxes_file_path = os.path.join(path, 'output/bounding_boxes.csv')
 
+if os.path.exists(point_clouds_file_path) & os.path.exists(bounding_boxes_file_path):
+    os.remove(point_clouds_file_path)
+    os.remove(bounding_boxes_file_path)
 
-def dbscan_clustering(pcd, scan_number, eps=None, min_points=10, plot_k_distance=False, append = True):
+
+def dbscan_clustering(pcd, scan_number, eps=None, min_points=10, plot_k_distance=False, append=True):
     points = np.asarray(pcd.points)
     if eps is None:
         # Calculate the K-distance graph to determine eps
@@ -46,6 +49,7 @@ def dbscan_clustering(pcd, scan_number, eps=None, min_points=10, plot_k_distance
     unique_labels = set(labels)
     clusters = [points[labels == label] for label in unique_labels if label != -1]
 
+    """
     # Save labeled points to CSV
     scan_numbers = np.full((points.shape[0], 1), scan_number)
     labeled_points = np.hstack((scan_numbers, points, labels.reshape(-1, 1)))
@@ -53,6 +57,7 @@ def dbscan_clustering(pcd, scan_number, eps=None, min_points=10, plot_k_distance
     mode = 'a' if append else 'w'
     header = not append
     df.to_csv(point_clouds_file_path, mode=mode, header=header, index=False)
+    """
 
     silhouette_avg = silhouette_score(points, labels)
     db_index = davies_bouldin_score(points, labels)
@@ -64,7 +69,7 @@ def dbscan_clustering(pcd, scan_number, eps=None, min_points=10, plot_k_distance
     return clusters, labels
 
 
-def create_bounding_boxes(clusters, scan_number, append = True):
+def create_bounding_boxes(clusters, scan_number, append=True):
     bounding_boxes = []
     bbox_centroids = []
     bbox_coordinates = []
@@ -75,7 +80,7 @@ def create_bounding_boxes(clusters, scan_number, append = True):
         bounding_boxes.append(bbox)
         bbox_coordinates.append(bbox.get_box_points())
 
-
+    """
     # Save bounding box coordinates to CSV
     bbox_data = []
     for i, bbox in enumerate(bbox_coordinates):
@@ -86,6 +91,7 @@ def create_bounding_boxes(clusters, scan_number, append = True):
     mode = 'a' if append else 'w'
     header = not append
     df_bbox.to_csv(bounding_boxes_file_path, mode=mode, header=header, index=False)
+    """
 
     return bounding_boxes, bbox_centroids
 
@@ -105,4 +111,3 @@ def associate_ids_to_bboxes(centroids, object_ids, transformed_xyz):
         bbox_ids[i] = object_ids[closest_point_index]
 
     return bbox_ids
-
