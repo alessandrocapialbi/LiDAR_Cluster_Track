@@ -6,12 +6,19 @@ from clustering import *
 from simulation import update_visualization
 from tracking import track_vehicles, calculate_threshold
 import pandas as pd
+import os
+import numpy as np
+import open3d as o3d
 
 current_directory = os.path.dirname(os.path.abspath(__file__))
 point_cloud_directory = os.path.join(current_directory, 'filtered_sensors_data')
 sensors_positions_path = os.path.join(current_directory, 'sensors_positions/pitt_sensor_positions.csv')
 trajectories_path = os.path.join(current_directory, 'trajectories/pitt_trajectories.csv')
 predicted_trajectories_file_path = os.path.join(current_directory, 'output/predicted_trajectories.csv')
+
+# Remove the file if it exists
+if os.path.exists(predicted_trajectories_file_path):
+    os.remove(predicted_trajectories_file_path)
 
 frequency = 10
 
@@ -48,13 +55,29 @@ trajectories = {}
 
 vehicle_colors = {}
 
+# Load the trajectories from trajectories_df
+loaded_trajectories = {}
 
-# Loop through scan indices from 20 to 70
+
+# Function to generate a random color
 def generate_random_color():
     return np.random.uniform(0, 1, 3)
 
 
+# Loop through scan indices from 20 to 70
 for i in range(20, 71):
+    # Filter the trajectories for the current timestep
+    current_trajectories = trajectories_df[trajectories_df['time'] == (i - 20)]
+    for _, row in current_trajectories.iterrows():
+        vehicle_id = int(row['label']) if row['label'] != 'AV' else -1
+        point = [row['x'], row['y']]
+
+        # Transform the trajectory point
+        transformed_point = np.array(point) - centroid[:2]
+
+        if vehicle_id not in loaded_trajectories:
+            loaded_trajectories[vehicle_id] = []
+        loaded_trajectories[vehicle_id].append(transformed_point)
 
     point_clouds = []
     combined_geometries = []
@@ -70,8 +93,7 @@ for i in range(20, 71):
     # Load and transform scans for each selected sensor
     for sensor_id, sensor_scan in zip(selected_sensors, sensors_scans):
         print(f"Loading scan {i} for sensor {sensor_id}")
-        transformed_xyz, object_ids = load_and_transform_scan(sensor_scan, sensors_positions_df, centroid,
-                                                              sensor_id)
+        transformed_xyz, object_ids = load_and_transform_scan(sensor_scan, sensors_positions_df, centroid, sensor_id)
         all_transformed_xyz.append(transformed_xyz)
         all_object_ids.extend(object_ids)
 
@@ -116,21 +138,31 @@ for i in range(20, 71):
         # Save predicted trajectories to CSV
         trajectory_data = []
         for vehicle_id, points in trajectories.items():
-            if points:
-                last_point = points[-1]
-                trajectory_data.append([i, vehicle_id] + last_point.tolist())
-
+            for point in points:
+                trajectory_data.append([i, vehicle_id, *point])
 
         df_trajectories = pd.DataFrame(trajectory_data, columns=['scan', 'vehicle_id', 'x', 'y', 'z'])
         df_trajectories.to_csv(predicted_trajectories_file_path, mode='a', header=False, index=False)
 
         # Draw the trajectories
+        # Combine real and predicted trajectories
+        # If we want to visualize only the predicted trajectories, we can use only the 'trajectories' dictionary and vice versa
+        all_trajectories = {**loaded_trajectories, **trajectories}
+
+        # Draw the trajectories
         trajectory_lines = []
-        for vehicle_id, points in trajectories.items():
-            if len(points) > 1:
+        for vehicle_id, points in all_trajectories.items():
+            if len(points) > 1:  # Ensure at least two timesteps
+                # Check if points are 2D or 3D
+                if len(points[0]) == 2:
+                    # Convert 2D points to 3D by adding a z coordinate (set to 0)
+                    points_3d = np.hstack((np.asarray(points), np.zeros((len(points), 1))))
+                else:
+                    points_3d = np.asarray(points)
+
                 lines = np.asarray([[i, i + 1] for i in range(len(points) - 1)], dtype=np.int32)
                 line_set = o3d.geometry.LineSet()
-                line_set.points = o3d.utility.Vector3dVector(np.asarray(points))
+                line_set.points = o3d.utility.Vector3dVector(points_3d)
                 line_set.lines = o3d.utility.Vector2iVector(lines)
                 if vehicle_id not in vehicle_colors:
                     vehicle_colors[vehicle_id] = generate_random_color()
@@ -140,7 +172,6 @@ for i in range(20, 71):
 
         # Update the visualization including trajectories
         update_visualization(vis, pcd_combined, bounding_boxes + trajectory_lines)
-
         # Update the previous bounding boxes and centroids
         prev_ids = bbox_ids
         prev_bbox_centroids = bbox_centroids
