@@ -3,8 +3,8 @@ from sensor_selection import select_sensors
 from data_loader import *
 from transform_coordinates import *
 from clustering import *
-from simulation import update_visualization
-from tracking import track_vehicles, calculate_threshold
+from simulation import update_visualization, create_cylinder_between_points
+from tracking import track_vehicles, calculate_threshold, calculate_mse
 import pandas as pd
 import os
 import numpy as np
@@ -15,6 +15,7 @@ point_cloud_directory = os.path.join(current_directory, 'filtered_sensors_data')
 sensors_positions_path = os.path.join(current_directory, 'sensors_positions/pitt_sensor_positions.csv')
 trajectories_path = os.path.join(current_directory, 'trajectories/pitt_trajectories.csv')
 predicted_trajectories_file_path = os.path.join(current_directory, 'output/predicted_trajectories.csv')
+video_frames_directory = os.path.join(current_directory, 'output/video_frames')
 
 # Remove the file if it exists
 if os.path.exists(predicted_trajectories_file_path):
@@ -51,12 +52,12 @@ vis.create_window()
 prev_ids = []
 prev_bbox_centroids = []
 
-trajectories = {}
+predicted_trajectories = {}
 
 vehicle_colors = {}
 
-# Load the trajectories from trajectories_df
-loaded_trajectories = {}
+# Load the real trajectories from trajectories_df
+real_trajectories = {}
 
 
 # Function to generate a random color
@@ -64,20 +65,24 @@ def generate_random_color():
     return np.random.uniform(0, 1, 3)
 
 
+# Initialize the frame index for saving screenshots and create a video
+frame_index = 0
+
 # Loop through scan indices from 20 to 70
 for i in range(20, 71):
     # Filter the trajectories for the current timestep
-    current_trajectories = trajectories_df[trajectories_df['time'] == (i - 20)]
+    current_trajectories = trajectories_df[trajectories_df['time'] == i]
     for _, row in current_trajectories.iterrows():
         vehicle_id = int(row['label']) if row['label'] != 'AV' else -1
         point = [row['x'], row['y']]
 
         # Transform the trajectory point
         transformed_point = np.array(point) - centroid[:2]
-
-        if vehicle_id not in loaded_trajectories:
-            loaded_trajectories[vehicle_id] = []
-        loaded_trajectories[vehicle_id].append(transformed_point)
+        # Check if this vehicle_id already exists in the dictionary
+        if vehicle_id not in real_trajectories:
+            real_trajectories[vehicle_id] = [transformed_point]  # Start a list for this vehicle
+        else:
+            real_trajectories[vehicle_id].append(transformed_point)  # Append the point
 
     point_clouds = []
     combined_geometries = []
@@ -128,16 +133,20 @@ for i in range(20, 71):
                 if current_id in bbox_ids:
                     current_centroid = bbox_centroids[bbox_ids.index(current_id)]
                     # If the vehicle ID is not in the dictionary, add it
-                    if prev_id not in trajectories:
-                        trajectories[prev_id] = []
+                    if prev_id not in predicted_trajectories:
+                        predicted_trajectories[prev_id] = []
 
                     # Append the current centroid to the trajectory
-                    trajectories[prev_id].append(current_centroid)
+                    predicted_trajectories[prev_id].append(current_centroid)
 
+            # Extract only the X and Y coordinates of the predicted centroids
+            predicted_trajectories_xy = {vehicle_id: [point[:2] for point in points] for vehicle_id, points in
+                                         predicted_trajectories.items()}
+            calculate_mse(predicted_trajectories_xy, real_trajectories, tracking_threshold, i - 20)
 
         # Save predicted trajectories to CSV
         trajectory_data = []
-        for vehicle_id, points in trajectories.items():
+        for vehicle_id, points in predicted_trajectories.items():
             for point in points:
                 trajectory_data.append([i, vehicle_id, *point])
 
@@ -147,7 +156,7 @@ for i in range(20, 71):
         # Draw the trajectories
         # Combine real and predicted trajectories
         # If we want to visualize only the predicted trajectories, we can use only the 'trajectories' dictionary and vice versa
-        all_trajectories = {**loaded_trajectories, **trajectories}
+        all_trajectories = {**predicted_trajectories, **real_trajectories}
 
         # Draw the trajectories
         trajectory_lines = []
@@ -160,18 +169,26 @@ for i in range(20, 71):
                 else:
                     points_3d = np.asarray(points)
 
-                lines = np.asarray([[i, i + 1] for i in range(len(points) - 1)], dtype=np.int32)
-                line_set = o3d.geometry.LineSet()
-                line_set.points = o3d.utility.Vector3dVector(points_3d)
-                line_set.lines = o3d.utility.Vector2iVector(lines)
                 if vehicle_id not in vehicle_colors:
                     vehicle_colors[vehicle_id] = generate_random_color()
-                colors = np.array([vehicle_colors[vehicle_id] for _ in range(len(lines))], dtype=np.float64)
-                line_set.colors = o3d.utility.Vector3dVector(colors)
-                trajectory_lines.append(line_set)
+
+                color = vehicle_colors[vehicle_id]
+                for idx in range(len(points_3d) - 1):
+                    point1 = points_3d[idx]
+                    point2 = points_3d[idx + 1]
+                    # Create a cylinder between the two points
+                    cylinder = create_cylinder_between_points(point1, point2, color, radius=0.1)
+                    trajectory_lines.append(cylinder)
 
         # Update the visualization including trajectories
         update_visualization(vis, pcd_combined, bounding_boxes + trajectory_lines)
+
+
+        screenshot_path = os.path.join(video_frames_directory, f"frame_{frame_index:04d}.png")
+        vis.capture_screen_image(screenshot_path)
+        frame_index += 1
+
+
         # Update the previous bounding boxes and centroids
         prev_ids = bbox_ids
         prev_bbox_centroids = bbox_centroids
