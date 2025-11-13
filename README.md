@@ -1,6 +1,10 @@
 # Clustering and Vehicle Tracking of vehicles in Pittsburgh with Visualization
 
-This project involves clustering and tracking vehicles using point cloud data from multiple sensors taken by the dataset **Argoverse 2**. The data is processed to transform coordinates, perform clustering, tracking and visualize the results using Open3D.
+This project involves clustering and tracking vehicles using point cloud data from multiple sensors taken by the dataset **Argoverse 2**. The data is processed to transform coordinates, perform clustering, tracking and visualize the results using Open3D. The original files are not stored, but they have columns: timestamp, yaw, pitch, distance, distance_noise,  x, y, z, which contain the coordinates of each point extracted by the LIDAR sensor; x_noise, y_noise, z_noise contain the same data with added noise to simulate the imperfections of a real sensor; object_id, color (R), color(G), color(B).
+
+The file name follows this convention: sensor_X_YY.csv provides the output of sensor X at scan YY.
+
+The file pitt_trajectories.csv contains the ground-truth trajectories of the vehicles, while the file pitt_sensor_positions.csv contains the positions of the sensors.
 
 ## Table of Contents
 - [Installation](#installation)
